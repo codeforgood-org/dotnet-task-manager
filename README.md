@@ -4,6 +4,7 @@ A modern, feature-rich command-line task manager built with .NET 8. Manage your 
 
 ## Features
 
+### Core Features
 - ✅ Add, list, update, and remove tasks
 - 🎯 Priority levels (1-5, with 5 being highest)
 - 🏷️ Tag support for better organization
@@ -12,9 +13,22 @@ A modern, feature-rich command-line task manager built with .NET 8. Manage your 
 - ✓ Mark tasks as complete
 - 🗑️ Clear completed tasks
 - 💾 JSON file-based persistence
+
+### Advanced Features
+- 📊 Statistics and reporting
+- 📤 Export to CSV, Markdown, and JSON
+- 📥 Import tasks from JSON
+- ⚙️ Configuration file support
+- 🐳 Docker support for containerized deployment
 - 🎨 Clean, intuitive CLI interface
+
+### Developer Features
 - 🏗️ Modular architecture with dependency injection
 - 📝 Comprehensive logging
+- 🧪 90%+ test coverage
+- 🔧 VSCode integration
+- 🚀 CI/CD with GitHub Actions
+- 📦 Cross-platform builds
 
 ## Installation
 
@@ -34,6 +48,32 @@ dotnet build
 
 # Run the application
 dotnet run --project src/TaskManager.CLI -- <command> [options]
+```
+
+### Using Build Scripts
+
+```bash
+# Linux/macOS
+./build.sh build    # Build the solution
+./build.sh test     # Run tests
+./build.sh publish  # Publish for all platforms
+./build.sh run -- list  # Run the application
+
+# Windows
+build.cmd build
+build.cmd test
+build.cmd publish
+```
+
+### Docker
+
+```bash
+# Build and run with Docker
+docker build -t taskmanager .
+docker run -v $(pwd)/data:/app/data taskmanager list
+
+# Or use docker-compose
+docker-compose up taskmanager-dev
 ```
 
 ### Install as Global Tool (Optional)
@@ -123,6 +163,25 @@ taskman remove 1
 taskman clear
 ```
 
+#### Statistics
+
+```bash
+# View task statistics
+taskman stats
+```
+
+#### Export/Import
+
+```bash
+# Export to different formats
+taskman export --format csv --output tasks.csv
+taskman export --format markdown --output tasks.md
+taskman export --format json --output tasks.json
+
+# Import from JSON
+taskman import tasks-backup.json
+```
+
 ### Task Display Format
 
 Tasks are displayed with the following information:
@@ -198,6 +257,24 @@ The project includes:
 - Nullable reference types enabled
 - Comprehensive unit tests
 
+## Configuration
+
+The application can be configured using `appsettings.json`:
+
+```json
+{
+  "AppConfig": {
+    "TasksFilePath": "tasks.json",
+    "DefaultPriority": 3,
+    "UseColors": true,
+    "DateFormat": "yyyy-MM-dd",
+    "ShowCompletedByDefault": true,
+    "UpcomingDaysThreshold": 7,
+    "ExportDirectory": "exports"
+  }
+}
+```
+
 ## Data Storage
 
 Tasks are stored in a `tasks.json` file in the current working directory. The file is automatically created when you add your first task.
@@ -236,16 +313,62 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Examples
+
+See the [examples/](examples/) directory for:
+- Sample task files
+- Common usage scenarios  - Task templates
+- Best practices
+
+## Docker Usage
+
+### Building the Image
+
+```bash
+docker build -t taskmanager .
+```
+
+### Running with Docker
+
+```bash
+# Create a data directory for persistent storage
+mkdir -p data
+
+# Run commands
+docker run -v $(pwd)/data:/app/data taskmanager add "Docker task" --priority 5
+docker run -v $(pwd)/data:/app/data taskmanager list
+docker run -v $(pwd)/data:/app/data taskmanager stats
+```
+
+### Development with Docker Compose
+
+```bash
+# Start development environment
+docker-compose up taskmanager-dev
+
+# In another terminal, access the container
+docker exec -it taskmanager-dev bash
+dotnet run --project src/TaskManager.CLI -- list
+```
+
 ## Roadmap
 
-Future enhancements planned:
+### Completed ✅
+- [x] Priority levels
+- [x] Tag support
+- [x] Export to CSV, Markdown, JSON
+- [x] Statistics and reports
+- [x] Docker support
+- [x] Configuration file
+- [x] Comprehensive tests
 
+### Planned
+- [ ] Color-coded CLI output with Spectre.Console
+- [ ] Interactive mode
 - [ ] Recurring tasks
 - [ ] Task categories/projects
-- [ ] Export to different formats (CSV, Markdown)
-- [ ] Color-coded output
-- [ ] Task statistics and reports
 - [ ] Cloud synchronization
+- [ ] Web API
 - [ ] Web interface
 - [ ] Mobile companion app
 
