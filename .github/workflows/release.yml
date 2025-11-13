@@ -1,0 +1,126 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run tests
+      run: dotnet test --configuration Release --no-build --verbosity normal
+
+    - name: Publish Linux x64
+      run: |
+        dotnet publish src/TaskManager.CLI/TaskManager.CLI.csproj \
+          -c Release \
+          -r linux-x64 \
+          --self-contained \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true \
+          -o ./publish/linux-x64
+
+    - name: Publish Windows x64
+      run: |
+        dotnet publish src/TaskManager.CLI/TaskManager.CLI.csproj \
+          -c Release \
+          -r win-x64 \
+          --self-contained \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true \
+          -o ./publish/win-x64
+
+    - name: Publish macOS x64
+      run: |
+        dotnet publish src/TaskManager.CLI/TaskManager.CLI.csproj \
+          -c Release \
+          -r osx-x64 \
+          --self-contained \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true \
+          -o ./publish/osx-x64
+
+    - name: Publish macOS ARM64
+      run: |
+        dotnet publish src/TaskManager.CLI/TaskManager.CLI.csproj \
+          -c Release \
+          -r osx-arm64 \
+          --self-contained \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true \
+          -o ./publish/osx-arm64
+
+    - name: Create archives
+      run: |
+        cd publish
+        tar -czf taskman-linux-x64-${{ steps.get_version.outputs.VERSION }}.tar.gz -C linux-x64 .
+        zip -r taskman-win-x64-${{ steps.get_version.outputs.VERSION }}.zip win-x64
+        tar -czf taskman-macos-x64-${{ steps.get_version.outputs.VERSION }}.tar.gz -C osx-x64 .
+        tar -czf taskman-macos-arm64-${{ steps.get_version.outputs.VERSION }}.tar.gz -C osx-arm64 .
+
+    - name: Generate checksums
+      run: |
+        cd publish
+        sha256sum *.tar.gz *.zip > SHA256SUMS
+
+    - name: Extract changelog
+      id: changelog
+      run: |
+        # Extract changelog for this version
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$ d' > RELEASE_NOTES.md
+        if [ ! -s RELEASE_NOTES.md ]; then
+          echo "Release $VERSION" > RELEASE_NOTES.md
+          echo "See [CHANGELOG.md](CHANGELOG.md) for details." >> RELEASE_NOTES.md
+        fi
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ steps.get_version.outputs.VERSION }}
+        body_path: RELEASE_NOTES.md
+        files: |
+          publish/taskman-linux-x64-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          publish/taskman-win-x64-${{ steps.get_version.outputs.VERSION }}.zip
+          publish/taskman-macos-x64-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          publish/taskman-macos-arm64-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          publish/SHA256SUMS
+        draft: false
+        prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build NuGet package
+      run: dotnet pack src/TaskManager.CLI/TaskManager.CLI.csproj -c Release -p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
+
+    - name: Publish to NuGet (optional)
+      if: ${{ !contains(github.ref, '-rc') && !contains(github.ref, '-beta') && !contains(github.ref, '-alpha') }}
+      run: dotnet nuget push src/TaskManager.CLI/bin/Release/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      continue-on-error: true

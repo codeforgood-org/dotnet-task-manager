@@ -1,5 +1,12 @@
 # Task Manager CLI
 
+[![Build Status](https://github.com/codeforgood-org/dotnet-task-manager/workflows/CI%2FCD/badge.svg)](https://github.com/codeforgood-org/dotnet-task-manager/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![.NET Version](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](CHANGELOG.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-purple.svg)](CODE_OF_CONDUCT.md)
+
 A modern, feature-rich command-line task manager built with .NET 8. Manage your tasks efficiently with priorities, tags, due dates, and powerful search capabilities.
 
 ## Features

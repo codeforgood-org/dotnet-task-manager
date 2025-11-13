@@ -19,6 +19,8 @@ class Program
 
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
         var taskService = serviceProvider.GetRequiredService<ITaskService>();
+        var exportService = serviceProvider.GetRequiredService<IExportService>();
+        var statisticsService = serviceProvider.GetRequiredService<IStatisticsService>();
 
         try
         {
@@ -41,6 +43,9 @@ class Program
                 "priority" => await HandlePriorityCommand(args, taskService),
                 "search" => await HandleSearchCommand(args, taskService),
                 "clear" => await HandleClearCommand(taskService),
+                "stats" => HandleStatsCommand(taskService, statisticsService),
+                "export" => await HandleExportCommand(args, taskService, exportService),
+                "import" => await HandleImportCommand(args, taskService, exportService),
                 "help" => ShowUsage(),
                 _ => ShowUnknownCommand(command)
             };
@@ -69,6 +74,8 @@ class Program
         });
 
         services.AddSingleton<ITaskService, TaskService>();
+        services.AddSingleton<IExportService, ExportService>();
+        services.AddSingleton<IStatisticsService, StatisticsService>();
     }
 
     private static async Task<int> HandleAddCommand(string[] args, ITaskService taskService)
@@ -288,6 +295,186 @@ class Program
         return Task.FromResult(0);
     }
 
+    private static int HandleStatsCommand(ITaskService taskService, IStatisticsService statisticsService)
+    {
+        var tasks = taskService.GetAllTasks().ToList();
+        var stats = statisticsService.GetStatistics(tasks);
+
+        Console.WriteLine("\n╔═══════════════════════════════════════╗");
+        Console.WriteLine("║         Task Statistics               ║");
+        Console.WriteLine("╚═══════════════════════════════════════╝\n");
+
+        Console.WriteLine($"📊 Total Tasks:        {stats.TotalTasks}");
+        Console.WriteLine($"✅ Completed:          {stats.CompletedTasks}");
+        Console.WriteLine($"⏳ Pending:            {stats.PendingTasks}");
+        Console.WriteLine($"⚠️  Overdue:            {stats.OverdueTasks}");
+        Console.WriteLine($"📅 Due Today:          {stats.DueToday}");
+        Console.WriteLine($"📆 Due This Week:      {stats.DueThisWeek}");
+        Console.WriteLine($"📈 Completion Rate:    {stats.CompletionRate:F1}%");
+        Console.WriteLine($"⭐ Avg Priority:       {stats.AveragePriority:F1}");
+        Console.WriteLine($"🏷️  Unique Tags:        {stats.TotalTags}");
+
+        // Priority breakdown
+        var priorityBreakdown = statisticsService.GetTasksByPriority(tasks);
+        if (priorityBreakdown.Any())
+        {
+            Console.WriteLine("\n🎯 Priority Breakdown (Pending):");
+            foreach (var (priority, count) in priorityBreakdown.OrderByDescending(kv => kv.Key))
+            {
+                var stars = new string('★', priority);
+                Console.WriteLine($"   {stars} Priority {priority}: {count} task(s)");
+            }
+        }
+
+        // Tag breakdown
+        var tagBreakdown = statisticsService.GetTasksByTag(tasks);
+        if (tagBreakdown.Any())
+        {
+            Console.WriteLine("\n🏷️  Top Tags:");
+            foreach (var (tag, count) in tagBreakdown.Take(10))
+            {
+                Console.WriteLine($"   {tag}: {count} task(s)");
+            }
+        }
+
+        // Overdue tasks
+        var overdueTasks = statisticsService.GetOverdueTasks(tasks).ToList();
+        if (overdueTasks.Any())
+        {
+            Console.WriteLine($"\n⚠️  Overdue Tasks ({overdueTasks.Count}):");
+            foreach (var task in overdueTasks.Take(5))
+            {
+                Console.WriteLine($"   [{task.Id}] {task.Description} (Due: {task.DueDate:yyyy-MM-dd})");
+            }
+            if (overdueTasks.Count > 5)
+            {
+                Console.WriteLine($"   ... and {overdueTasks.Count - 5} more");
+            }
+        }
+
+        // Upcoming tasks
+        var upcomingTasks = statisticsService.GetUpcomingTasks(tasks, 7).ToList();
+        if (upcomingTasks.Any())
+        {
+            Console.WriteLine($"\n📅 Upcoming Tasks (Next 7 Days):");
+            foreach (var task in upcomingTasks.Take(5))
+            {
+                Console.WriteLine($"   [{task.Id}] {task.Description} (Due: {task.DueDate:yyyy-MM-dd})");
+            }
+            if (upcomingTasks.Count > 5)
+            {
+                Console.WriteLine($"   ... and {upcomingTasks.Count - 5} more");
+            }
+        }
+
+        Console.WriteLine();
+        return 0;
+    }
+
+    private static async Task<int> HandleExportCommand(string[] args, ITaskService taskService, IExportService exportService)
+    {
+        var format = "json";
+        var output = string.Empty;
+
+        for (int i = 1; i < args.Length; i++)
+        {
+            if (args[i] == "--format" && i + 1 < args.Length)
+            {
+                format = args[++i].ToLowerInvariant();
+            }
+            else if (args[i] == "--output" && i + 1 < args.Length)
+            {
+                output = args[++i];
+            }
+        }
+
+        if (string.IsNullOrEmpty(output))
+        {
+            output = $"tasks-export-{DateTime.Now:yyyyMMdd-HHmmss}.{format}";
+        }
+
+        var tasks = taskService.GetAllTasks().ToList();
+
+        try
+        {
+            switch (format)
+            {
+                case "csv":
+                    await exportService.ExportToCsvAsync(tasks, output);
+                    break;
+                case "markdown":
+                case "md":
+                    await exportService.ExportToMarkdownAsync(tasks, output);
+                    break;
+                case "json":
+                    await exportService.ExportToJsonAsync(tasks, output);
+                    break;
+                default:
+                    Console.WriteLine($"Error: Unknown format '{format}'. Supported: csv, markdown, json");
+                    return 1;
+            }
+
+            Console.WriteLine($"✅ Exported {tasks.Count} task(s) to {output}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Export failed: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static async Task<int> HandleImportCommand(string[] args, ITaskService taskService, IExportService exportService)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("Error: Please provide the import file path.");
+            Console.WriteLine("Usage: taskman import <file.json>");
+            return 1;
+        }
+
+        var filePath = args[1];
+
+        try
+        {
+            var importedTasks = await exportService.ImportFromJsonAsync(filePath);
+
+            Console.WriteLine($"Found {importedTasks.Count} task(s) in import file.");
+            Console.Write("This will add these tasks to your current list. Continue? (y/n): ");
+
+            var response = Console.ReadLine()?.ToLowerInvariant();
+            if (response != "y" && response != "yes")
+            {
+                Console.WriteLine("Import cancelled.");
+                return 0;
+            }
+
+            var currentTasks = taskService.GetAllTasks().ToList();
+            var maxId = currentTasks.Any() ? currentTasks.Max(t => t.Id) : 0;
+
+            // Reassign IDs to avoid conflicts
+            foreach (var task in importedTasks)
+            {
+                task.Id = ++maxId;
+                taskService.AddTask(task.Description, task.Priority, task.DueDate, task.Tags);
+            }
+
+            await taskService.SaveTasksAsync();
+            Console.WriteLine($"✅ Successfully imported {importedTasks.Count} task(s)");
+            return 0;
+        }
+        catch (FileNotFoundException)
+        {
+            Console.WriteLine($"❌ Error: File not found: {filePath}");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Import failed: {ex.Message}");
+            return 1;
+        }
+    }
+
     private static int ShowUsage()
     {
         Console.WriteLine("Task Manager - A modern CLI task management tool\n");
@@ -310,6 +497,14 @@ class Program
         Console.WriteLine("  priority <id> <1-5>            Update task priority");
         Console.WriteLine("  search <query>                 Search tasks by description or tags");
         Console.WriteLine("  clear                          Remove all completed tasks");
+        Console.WriteLine("  stats                          View task statistics");
+        Console.WriteLine();
+        Console.WriteLine("  export [options]               Export tasks to file");
+        Console.WriteLine("    Options:");
+        Console.WriteLine("      --format <format>          csv, markdown, or json (default: json)");
+        Console.WriteLine("      --output <file>            Output file path");
+        Console.WriteLine();
+        Console.WriteLine("  import <file>                  Import tasks from JSON file");
         Console.WriteLine("  help                           Show this help message");
         Console.WriteLine();
         Console.WriteLine("Examples:");
@@ -317,6 +512,9 @@ class Program
         Console.WriteLine("  taskman list --pending");
         Console.WriteLine("  taskman complete 1");
         Console.WriteLine("  taskman search groceries");
+        Console.WriteLine("  taskman stats");
+        Console.WriteLine("  taskman export --format csv --output tasks.csv");
+        Console.WriteLine("  taskman import backup.json");
 
         return 0;
     }
