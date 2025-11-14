@@ -1,0 +1,92 @@
+[
+  {
+    "Id": 1,
+    "Description": "Review pull requests for the authentication module",
+    "IsCompleted": false,
+    "Priority": 5,
+    "CreatedAt": "2024-01-15T09:00:00Z",
+    "DueDate": "2024-01-20T00:00:00Z",
+    "Tags": ["work", "code-review", "urgent"]
+  },
+  {
+    "Id": 2,
+    "Description": "Buy groceries for the week",
+    "IsCompleted": false,
+    "Priority": 3,
+    "CreatedAt": "2024-01-15T10:30:00Z",
+    "DueDate": null,
+    "Tags": ["personal", "shopping"]
+  },
+  {
+    "Id": 3,
+    "Description": "Prepare presentation for team meeting",
+    "IsCompleted": false,
+    "Priority": 4,
+    "CreatedAt": "2024-01-14T14:00:00Z",
+    "DueDate": "2024-01-18T00:00:00Z",
+    "Tags": ["work", "presentation"]
+  },
+  {
+    "Id": 4,
+    "Description": "Update project documentation",
+    "IsCompleted": true,
+    "Priority": 3,
+    "CreatedAt": "2024-01-10T11:00:00Z",
+    "DueDate": null,
+    "Tags": ["work", "documentation"]
+  },
+  {
+    "Id": 5,
+    "Description": "Schedule dentist appointment",
+    "IsCompleted": false,
+    "Priority": 2,
+    "CreatedAt": "2024-01-15T16:20:00Z",
+    "DueDate": "2024-01-25T00:00:00Z",
+    "Tags": ["personal", "health"]
+  },
+  {
+    "Id": 6,
+    "Description": "Research new database optimization techniques",
+    "IsCompleted": false,
+    "Priority": 3,
+    "CreatedAt": "2024-01-12T08:45:00Z",
+    "DueDate": null,
+    "Tags": ["work", "research", "learning"]
+  },
+  {
+    "Id": 7,
+    "Description": "Fix bug in user authentication flow",
+    "IsCompleted": false,
+    "Priority": 5,
+    "CreatedAt": "2024-01-16T07:30:00Z",
+    "DueDate": "2024-01-17T00:00:00Z",
+    "Tags": ["work", "bug", "urgent", "security"]
+  },
+  {
+    "Id": 8,
+    "Description": "Plan weekend hiking trip",
+    "IsCompleted": false,
+    "Priority": 2,
+    "CreatedAt": "2024-01-13T19:15:00Z",
+    "DueDate": "2024-01-19T00:00:00Z",
+    "Tags": ["personal", "recreation", "planning"]
+  },
+  {
+    "Id": 9,
+    "Description": "Review and respond to customer feedback",
+    "IsCompleted": true,
+    "Priority": 4,
+    "CreatedAt": "2024-01-11T13:00:00Z",
+    "DueDate": null,
+    "Tags": ["work", "customer-service"]
+  },
+  {
+    "Id": 10,
+    "Description": "Refactor legacy code in payment module",
+    "IsCompleted": false,
+    "Priority": 3,
+    "CreatedAt": "2024-01-14T10:00:00Z",
+    "DueDate": "2024-02-01T00:00:00Z",
+    "Tags": ["work", "refactoring", "technical-debt"]
+  }
+]

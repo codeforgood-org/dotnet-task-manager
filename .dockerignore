@@ -1,0 +1,36 @@
+# Directories
+**/bin/
+**/obj/
+**/out/
+**/publish/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/node_modules/
+**/TestResults/
+**/coverage/
+
+# Files
+**/.DS_Store
+**/*.user
+**/*.suo
+**/*.userprefs
+**/tasks.json
+**/test_tasks*.json
+**/.git
+**/.gitignore
+**/.gitattributes
+**/*.md
+!README.md
+LICENSE
+
+# Build artifacts
+**/packages/
+**/.nuget/
+*.nupkg
+*.snupkg
+
+# Test and coverage
+**/*.trx
+**/*.coverage
+**/*.coveragexml

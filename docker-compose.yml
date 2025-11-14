@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  taskmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskmanager-cli
+    volumes:
+      # Mount a local directory for persistent task storage
+      - ./data:/app/data
+    environment:
+      - TASKS_FILE_PATH=/app/data/tasks.json
+    # Override the default command to keep container running
+    # You can exec into it to run commands
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash"]
+
+  # Development service with hot reload
+  taskmanager-dev:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: taskmanager-dev
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - ~/.nuget/packages:/root/.nuget/packages
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    command: dotnet watch --project src/TaskManager.CLI/TaskManager.CLI.csproj run
+    stdin_open: true
+    tty: true
